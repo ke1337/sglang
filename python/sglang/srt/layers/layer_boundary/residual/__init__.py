@@ -91,13 +91,15 @@ class ResidualReadout(Protocol):
             read that slice, its result gathered after it. Not derivable from
             the rows the stage computes on: a read on the slice followed by a
             gather and a read after the gather leave the same compute rows.
-        completing_fusions: Optional. ReadoutFusion kernels that complete the
-            sum the input owes with the residual add ahead of this read, tried
-            before the boundary's own all-reduce or reduce-scatter.
-        gathering_reads: Optional. Callables ``(hidden_states, residual,
-            norm)`` that read the input on this rank's attention-TP slice and
-            gather it over attention TP, returning ``(input, residual)``, or
-            None when they do not take the batch.
+        completing_fusions: Optional, read with completing_fusions().
+            ReadoutFusion kernels that complete the sum the input owes with the
+            residual add ahead of this read, tried before the boundary's own
+            all-reduce or reduce-scatter.
+        gathering_reads: Optional, read with gathering_reads(). Callables
+            ``(hidden_states, residual, norm)`` that read the input on this
+            rank's attention-TP slice and gather it over attention TP,
+            returning ``(input, residual)``, or None when they do not take the
+            batch.
 
     init_residual initializes the stack residual. read consumes an
     already-written residual; update_and_read first applies the actual
@@ -187,6 +189,20 @@ class FinalRead(Protocol):
 
     def __call__(self, hidden_states, residual=None, **read_kwargs):
         """The final norm of ``hidden_states``, after adding ``residual``."""
+
+
+def completing_fusions(read: ResidualReadout) -> Tuple:
+    """The read's optional ``completing_fusions``. Without them the boundary
+    completes the sum with its own all-reduce or reduce-scatter and then runs
+    ``update_and_read``, which every read supports."""
+    return getattr(read, "completing_fusions", ())
+
+
+def gathering_reads(read: ResidualReadout) -> Tuple:
+    """The read's optional ``gathering_reads``. Without them the read runs on
+    the slice and the boundary gathers what it read, which every read that
+    may run on the slice supports."""
+    return getattr(read, "gathering_reads", ())
 
 
 def may_quantize_sum(update: ResidualUpdate) -> bool:

@@ -460,11 +460,13 @@ def _resolve_stage(stage, variant, following=None):
     if stage.update.applied_at_exit:
         if stage.sparse and moe_gathers_over_moe_cp():
             raise NotImplementedError(
-                "MHC does not support a MoE gathered over the MoE-CP group"
+                "an update applied at the stage's exit with a MoE gathered over "
+                "the MoE-CP group"
             )
         if get_parallel().attn_cp_size > 1 and _input_scattered_possible():
             raise NotImplementedError(
-                "MHC with input-scattered attention under attention CP"
+                "an update applied at the stage's exit with input-scattered "
+                "attention under attention CP"
             )
     if stage.kind is StageKind.FFN:
         declaration, residual, returned = _resolve_ffn(

@@ -279,7 +279,9 @@ class TestTheProducersUpdateChoosesTheOrder(CustomTestCase):
 
     def test_cross_layer_update_requires_a_lifetime_guarantee(self):
         local = Layout(frozenset())
-        stateful_update = SimpleNamespace(is_plain_add=False, applied_at_exit=False)
+        stateful_update = SimpleNamespace(
+            is_plain_add=False, applied_at_exit=False, outlives_layer=False
+        )
         edge = EdgeContract(
             OutputContract(local, update=stateful_update),
             InputContract(local),
