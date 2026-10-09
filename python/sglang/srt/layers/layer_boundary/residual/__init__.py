@@ -35,6 +35,13 @@ class ResidualUpdate(Protocol):
             and writes it at its exit, dropping the previous residual: what
             reaches its exit is already complete.
 
+    Optional:
+        quantized_sum: Whether the sum the contribution owes may be completed
+            by a quantized all-reduce when quantized communication is enabled.
+            This is a numerical policy, separate from being a plain add. An
+            update that does not set it is summed in full precision, which is
+            always correct; read it with may_quantize_sum.
+
     The shard conversion methods must move any update-associated state together
     with the residual. Nonlinear updates must not claim is_plain_add.
     """
@@ -150,6 +157,12 @@ class ResidualReadout(Protocol):
             (compute_input, residual). A fused implementation can preserve FP32
             accumulation through norm without materializing a rounded intermediate.
         """
+
+
+def may_quantize_sum(update: ResidualUpdate) -> bool:
+    """Whether the sum ``update``'s contribution owes may be completed by a
+    quantized all-reduce: its optional ``quantized_sum``, else full precision."""
+    return getattr(update, "quantized_sum", False)
 
 
 class LayerResidualOps(NamedTuple):

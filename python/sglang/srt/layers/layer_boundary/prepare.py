@@ -51,7 +51,11 @@ from sglang.srt.layers.layer_boundary.output import (
     UnreducedOutput,
     complete_owed,
 )
-from sglang.srt.layers.layer_boundary.residual import ResidualReadout, ResidualUpdate
+from sglang.srt.layers.layer_boundary.residual import (
+    ResidualReadout,
+    ResidualUpdate,
+    may_quantize_sum,
+)
 from sglang.srt.layers.layer_boundary.residual.add_norm import NORM_READOUT, PLAIN_ADD
 from sglang.srt.layers.layer_boundary.residual.stream import DeclaredSum
 from sglang.srt.model_executor.forward_batch_info import ForwardBatch
@@ -135,9 +139,8 @@ def _reduce_update_read(
         if result is not None:
             return result
     if group is SumGroup.ATTN_TP:
-        # MHC sums its streams in full precision.
         hidden_states = attn_tp_all_reduce(
-            hidden_states, forward_batch, may_quantize=update.is_plain_add
+            hidden_states, forward_batch, may_quantize=may_quantize_sum(update)
         )
     elif group is SumGroup.TP:
         hidden_states = tensor_model_parallel_all_reduce(hidden_states)
