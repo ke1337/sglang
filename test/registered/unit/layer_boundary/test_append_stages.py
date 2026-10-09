@@ -1012,14 +1012,16 @@ class TestRowsTheConsumerReads(CustomTestCase):
                 ):
                     stages = [
                         stage
-                        for _ in range(2)
+                        for i in range(2)
                         for stage in append_stages(
                             (declare_attn(read=GatheringRead()), fixture.Norm()),
                             (
                                 declare_ffn(
                                     sparse=True,
                                     next_layer_sparse=True,
-                                    update=update,
+                                    # The final read adds the last output as a
+                                    # plain add.
+                                    update=update if i == 0 else PLAIN_ADD,
                                 ),
                                 fixture.Norm(),
                             ),
